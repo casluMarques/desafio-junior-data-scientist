@@ -77,3 +77,41 @@ GROUP BY turismo.evento
 ORDER BY total_chamados DESC; 
 --reposta: Rock in Rio:602 ; Carnaval:206 ; Réveillon:88;
 --pergunta 9
+SELECT turismo.evento, 
+       COUNT(*) AS total_chamados, 
+       COUNT(*) / (DATE_DIFF(turismo.data_final, turismo.data_inicial, DAY) + 1) AS media_diaria
+FROM `datario.adm_central_atendimento_1746.chamado` chamado 
+JOIN `datario.turismo_fluxo_visitantes.rede_hoteleira_ocupacao_eventos` turismo
+ON chamado.data_inicio BETWEEN turismo.data_inicial AND turismo.data_final
+WHERE chamado.subtipo = 'Fiscalização de perturbação do sossego'
+GROUP BY turismo.evento, turismo.data_inicial, turismo.data_final
+ORDER BY media_diaria DESC;
+--respota: rock in rio
+--pergunta 10:
+WITH eventos_especificos AS (
+  SELECT 
+    turismo.evento, 
+    COUNT(*) AS total_chamados, 
+    COUNT(*) / (DATE_DIFF(MAX(turismo.data_final), MIN(turismo.data_inicial), DAY) + 1) AS media_diaria
+  FROM `datario.adm_central_atendimento_1746.chamado` chamado
+  JOIN `datario.turismo_fluxo_visitantes.rede_hoteleira_ocupacao_eventos` turismo
+  ON chamado.data_inicio BETWEEN turismo.data_inicial AND turismo.data_final
+  WHERE chamado.subtipo = 'Fiscalização de perturbação do sossego'
+  AND turismo.evento IN ('Reveillon', 'Carnaval', 'Rock in Rio')
+  GROUP BY turismo.evento
+),
+
+media_geral AS (
+  SELECT 
+    COUNT(*) AS total_chamados,
+    COUNT(*) / (DATE_DIFF(DATE '2023-12-31', DATE '2022-01-01', DAY) + 1) AS media_diaria
+  FROM `datario.adm_central_atendimento_1746.chamado`
+  WHERE subtipo = 'Fiscalização de perturbação do sossego'
+  AND DATE(data_particao) BETWEEN '2022-01-01' AND '2023-12-31'
+)
+
+SELECT * FROM eventos_especificos
+UNION ALL
+SELECT 'Média Geral' AS evento, total_chamados, media_diaria FROM media_geral
+ORDER BY media_diaria DESC;
+-- a média diária geral é de 68 chamados, e a média em dia de eventos é levemente inferior, com 60 para o rock in rio e 51 para o carnaval
