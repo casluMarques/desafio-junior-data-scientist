@@ -1,16 +1,16 @@
 --pergunta 1
 SELECT COUNT(*) 
 FROM `datario.adm_central_atendimento_1746.chamado` 
-WHERE DATE(data_particao) = "2023-04-01"; 
---Respota: 78308
+WHERE DATE(data_inicio) = "2023-04-01"; 
+--Respota: 1903
 
 --pergunta 2
 SELECT categoria, COUNT(*) AS total_chamados 
 FROM `datario.adm_central_atendimento_1746.chamado` 
-WHERE DATE(data_particao) = "2023-04-01"
+WHERE DATE(data_inicio) = "2023-04-01"
 GROUP BY categoria
 ORDER BY total_chamados DESC; 
---respota: serviço:66970
+--respota: serviço:1756
 
 --pergunta 3
 SELECT bairro.nome, COUNT(*) AS total_chamados
@@ -41,3 +41,39 @@ WHERE DATE(chamado.data_inicio) = '2023-04-01'
 AND bairro.id_bairro IS NULL;
 /* resposta: sim, existem chamados que não estão associados a bairros. Isso provavelmente acontece na hora da coleta dos dados. O responsável pela transcirção do chamado para o sistema pode ter esquecido de preencher o dado
 ou ainda, ter digitado errado e incluido um bairro ou id de bairro que não constam no sistema. */
+
+--pergunta 6
+SELECT subtipo , COUNT(*) AS total_chamados 
+FROM `datario.adm_central_atendimento_1746.chamado` 
+WHERE DATE(data_particao) BETWEEN "2022-01-01" AND "2023-12-31" 
+--AND subtipo = 'Perturbação do sossego'
+GROUP BY subtipo
+ORDER BY total_chamados DESC; 
+/* A query acima retorna todos os subtipos e o total de chamadas para cada. Verificamos que não existe o subtipo"Perturbação do sossego", mas sim "Fiscalização de perturbação do sossego". Assim, podemos aplicar o filtro correto, tendo portanto:*/
+SELECT subtipo , COUNT(*) AS total_chamados 
+FROM `datario.adm_central_atendimento_1746.chamado` 
+WHERE DATE(data_particao) BETWEEN "2022-01-01" AND "2023-12-31" 
+AND subtipo = 'Fiscalização de perturbação do sossego'
+GROUP BY subtipo
+ORDER BY total_chamados DESC; 
+-- Resposta: Fiscalização de perturbação do sossego : 50368
+
+--pergunta 7
+SELECT subtipo , COUNT(*) AS total_chamados 
+FROM `datario.adm_central_atendimento_1746.chamado` chamado 
+JOIN `datario.turismo_fluxo_visitantes.rede_hoteleira_ocupacao_eventos` evento
+ON chamado.data_inicio BETWEEN evento.data_inicial AND evento.data_final
+WHERE chamado.subtipo = 'Fiscalização de perturbação do sossego'
+GROUP BY chamado.subtipo
+ORDER BY total_chamados DESC; 
+--Resposta: 896
+--pergunta 8
+SELECT turismo.evento , COUNT(*) AS total_chamados 
+FROM `datario.adm_central_atendimento_1746.chamado` chamado 
+JOIN `datario.turismo_fluxo_visitantes.rede_hoteleira_ocupacao_eventos` turismo
+ON chamado.data_inicio BETWEEN turismo.data_inicial AND turismo.data_final
+WHERE chamado.subtipo = 'Fiscalização de perturbação do sossego'
+GROUP BY turismo.evento
+ORDER BY total_chamados DESC; 
+--reposta: Rock in Rio:602 ; Carnaval:206 ; Réveillon:88;
+--pergunta 9
